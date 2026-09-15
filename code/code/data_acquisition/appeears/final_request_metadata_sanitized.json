@@ -1,0 +1,45 @@
+{
+  "record_type": "AppEEARS_request_metadata",
+  "application": "NASA AppEEARS",
+  "task_type": "point",
+  "task_id": "a62c49f0-bf5e-419b-bfeb-23d8828b158c",
+  "created_timestamp_from_request_package": "2026-08-04T07:53:07.497056",
+  "updated_timestamp_from_request_package": "2026-08-04T07:53:30.267605",
+  "service_version": "3.124",
+  "web_version": "3.124",
+  "date_ranges": [
+    {
+      "endDate": "12-31-2025",
+      "recurring": false,
+      "startDate": "12-26-2000",
+      "yearRange": [
+        1950,
+        2050
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "layer": "PsnNet_500m",
+      "product": "MOD17A2HGF.061"
+    },
+    {
+      "layer": "Psn_QC_500m",
+      "product": "MOD17A2HGF.061"
+    }
+  ],
+  "requested_output": {
+    "format": {
+      "type": "geotiff"
+    }
+  },
+  "coordinate_count": 247,
+  "delivered_bundle_contains": [
+    "point-sample results CSV",
+    "request JSON",
+    "granule list",
+    "MOD17A2HGF.061 metadata XML",
+    "AppEEARS README"
+  ],
+  "package_readme_date_completed": "2026-08-04T07:53:30.267605"
+}

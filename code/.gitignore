@@ -1,0 +1,8 @@
+# Local inputs and generated outputs are intentionally excluded from the
+# public source release.
+data/processed/
+data/raw/
+runtime/
+configs/config.yaml
+__pycache__/
+*.py[cod]

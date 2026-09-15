@@ -1,0 +1,121 @@
+# Copy this file to config.yaml and set the local data paths.
+paths:
+  monthly_model_input: "../public_data_v1.1/model_input/monthly_model_input.csv"
+  study_sites: "../public_data_v1.1/model_input/study_sites_247.csv"
+  unseen_site_folds: "../public_data_v1.1/model_input/unseen_site_fold_assignment.csv"
+  processed_data: "data/processed"
+  predictions_dir: "runtime/predictions"
+  checkpoints_dir: "runtime/models"
+  results_dir: "runtime/results"
+  workbook: "runtime/results/model_comparison.xlsx"
+
+experiment:
+  input_features: 19
+  window_length: 36
+  seeds: [42, 2024, 3407]
+  train_years: [2005, 2018]
+  validation_years: [2019, 2021]
+  evaluation_years: [2022, 2025]
+
+training:
+  hidden_size: 128
+  learning_rate: 0.0001542960100551973
+  max_epochs: 150
+  early_stopping_patience: 20
+  batch_size: 256
+  weight_decay: 0.0001
+  grad_clip_norm: 1.0
+  scheduler_factor: 0.5
+  scheduler_patience: 6
+  scheduler_min_lr: 0.000001
+
+bootstrap:
+  n_resamples: 5000
+  random_seed: 20240724
+  cluster_variable: "point_id"
+
+clean_common_domain:
+  contaminated_point_id: 233
+  contaminated_input_year: 2022
+  contaminated_input_month: 10
+  window_length: 36
+
+models:
+  - name: "Full canonical"
+    prediction_file: "full_model_canonical.csv"
+    stochastic: true
+    role: "Reference model"
+    architecture: "CNN -> BiLSTM -> Attention -> Regressor"
+    tuning: "Validation-only RIME selection"
+  - name: "No Attention"
+    prediction_file: "no_attention.csv"
+    stochastic: true
+    role: "Controlled structural ablation"
+    architecture: "CNN -> BiLSTM -> mean pooling -> Regressor"
+    tuning: "Locked full-model settings"
+  - name: "No CNN"
+    prediction_file: "no_cnn.csv"
+    stochastic: true
+    role: "Controlled structural ablation"
+    architecture: "Raw sequence -> BiLSTM -> Attention -> Regressor"
+    tuning: "Locked full-model settings"
+  - name: "No BiLSTM"
+    prediction_file: "no_bilstm.csv"
+    stochastic: true
+    role: "Controlled structural ablation"
+    architecture: "CNN -> Attention -> Regressor (no recurrent layer)"
+    tuning: "Locked full-model settings"
+  - name: "No RIME"
+    prediction_file: "no_rime.csv"
+    stochastic: true
+    role: "Optimization-strategy comparison"
+    architecture: "CNN -> BiLSTM -> Attention -> Regressor"
+    tuning: "Validation-only conventional search"
+  - name: "CNN"
+    prediction_file: "baseline_cnn.csv"
+    stochastic: true
+    role: "Deep-learning baseline"
+    architecture: "CNN -> mean pooling -> Regressor"
+    tuning: "Validation-only grid"
+  - name: "LSTM"
+    prediction_file: "baseline_lstm.csv"
+    stochastic: true
+    role: "Deep-learning baseline"
+    architecture: "LSTM -> mean pooling -> Regressor"
+    tuning: "Validation-only grid"
+  - name: "BiLSTM"
+    prediction_file: "baseline_bilstm.csv"
+    stochastic: true
+    role: "Deep-learning baseline"
+    architecture: "BiLSTM -> mean pooling -> Regressor"
+    tuning: "Validation-only grid"
+  - name: "CNN-LSTM"
+    prediction_file: "baseline_cnn_lstm.csv"
+    stochastic: true
+    role: "Deep-learning baseline"
+    architecture: "CNN -> LSTM -> mean pooling -> Regressor"
+    tuning: "Validation-only grid"
+  - name: "Random Forest"
+    prediction_file: "baseline_random_forest.csv"
+    stochastic: false
+    role: "Traditional nonlinear baseline"
+    architecture: "Random Forest"
+    tuning: "Validation-only grid"
+  - name: "Ridge W36"
+    prediction_file: "baseline_ridge_w36.csv"
+    stochastic: false
+    role: "Traditional linear baseline"
+    architecture: "Ridge regression on flattened W36 features"
+    tuning: "Validation-only alpha grid"
+  - name: "Monthly climatology"
+    prediction_file: "baseline_monthly_climatology.csv"
+    stochastic: false
+    role: "Seasonal climatology baseline"
+    architecture: "Training-period calendar-month mean"
+    tuning: "None"
+  - name: "point-month climatology"
+    prediction_file: "baseline_point_month_climatology.csv"
+    stochastic: false
+    role: "Site-season climatology baseline"
+    architecture: "Training-period point_id x month mean"
+    tuning: "None"
