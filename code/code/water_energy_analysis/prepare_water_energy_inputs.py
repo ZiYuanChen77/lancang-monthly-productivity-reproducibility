@@ -452,7 +452,7 @@ def _assert_reference_invariants(master: pd.DataFrame, support: pd.DataFrame) ->
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--public-data-root", type=Path, help="Root of public_data_v1.1 (or its parent).")
+    p.add_argument("--public-data-root", type=Path, help="Root of public_data (or its parent).")
     p.add_argument("--monthly-input", type=Path, help="Path to monthly_model_input.csv.")
     p.add_argument("--appeears-mod17", type=Path, help="Optional public AppEEARS MOD17A2HGF point-sample CSV.")
     p.add_argument("--ndvi-qa", type=Path, help="Optional MOD13A1 monthly QA CSV for cold/snow sensitivity.")

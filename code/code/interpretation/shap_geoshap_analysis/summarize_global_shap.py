@@ -1176,9 +1176,7 @@ def correlation_outputs(
                     "training_samples": len(train_ids),
                     "lag_rows": len(flattened),
                     "interpretation": (
-                        "Used only to interpret shared or unstable SHAP "
-                        "attribution under correlated inputs; no feature was "
-                        "removed and no model was retrained."
+                        "Pairwise predictor correlations accompany the SHAP attribution summaries."
                     ),
                 }
             )

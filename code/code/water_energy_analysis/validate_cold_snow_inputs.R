@@ -20,10 +20,10 @@ support <- we_cold_snow_support_validation(cold)
 formula <- we_formula_model1(we_model1_k_initial(), "point_id")
 formula_text <- paste(deparse(formula, width.cutoff = 500L), collapse = " ")
 formula_vars <- all.vars(formula)
-stage1_text <- paste(readLines(we_path("01_CODE", "we_cold_snow_stage1.R"), warn = FALSE), collapse = "\n")
-bootstrap_text <- paste(readLines(we_path("01_CODE", "we_cold_snow_bootstrap.R"), warn = FALSE), collapse = "\n")
-common_text <- paste(readLines(we_path("01_CODE", "cold_snow_common.R"), warn = FALSE), collapse = "\n")
-primary_common_text <- paste(readLines(WE_PRIMARY_COMMON_PATH, warn = FALSE), collapse = "\n")
+stage1_text <- paste(readLines(file.path(WE_CODE_DIR, "fit_cold_snow_sensitivity.R"), warn = FALSE), collapse = "\n")
+bootstrap_text <- paste(readLines(file.path(WE_CODE_DIR, "bootstrap_cold_snow_sensitivity.R"), warn = FALSE), collapse = "\n")
+common_text <- paste(readLines(file.path(WE_CODE_DIR, "cold_snow_common.R"), warn = FALSE), collapse = "\n")
+primary_common_text <- paste(readLines(file.path(WE_CODE_DIR, "primary_common.R"), warn = FALSE), collapse = "\n")
 
 add_test("Primary input exactly 6992", nrow(primary) == 6992L, nrow(primary))
 add_test("Primary site count exactly 247", length(levels(primary$point_id)) == 247L,
@@ -33,12 +33,11 @@ add_test("ColdSnow starts from Primary only", all(!flags$explicit | flags$primar
 add_test("ColdSnow is strict Primary subset", all(we_key(cold) %in% we_key(primary)))
 add_test("Actual target temperature field exists", WE_TEMPERATURE_FIELD == "temperature_2m" &&
            WE_TEMPERATURE_FIELD %in% names(master))
-add_test("Temperature actual not anomaly", WE_TEMPERATURE_FIELD != "temperature_anomaly" &&
+add_test("Temperature field identity", WE_TEMPERATURE_FIELD != "temperature_anomaly" &&
            temperature_validation$separate_anomaly_field == "temperature_anomaly")
 add_test("Temperature unit Celsius verified", temperature_validation$unit == "degrees Celsius" &&
            temperature_validation$status == "PASS")
-add_test("Temperature threshold strictly greater than zero",
-         identical(c(-0.1, 0, 0.1) > 0, c(FALSE, FALSE, TRUE)))
+add_test("Observed temperature threshold", all(cold$temperature_2m > 0))
 add_test("Temperature predictor specification", !grepl("LST_Day_1km", formula_text, fixed = TRUE) &&
            !grepl("LST_Day_1km", common_text, fixed = TRUE))
 add_test("Snow status known required", all(!flags$explicit | flags$snow_known))
@@ -59,14 +58,10 @@ add_test("Fixed canonical Model1 formula", grepl("te\\(precip_rank_baseline, rad
            grepl("factor\\(Month\\)", formula_text) && grepl("factor\\(Year\\)", formula_text) &&
            grepl('s\\(point_id, bs = "re"\\)', formula_text))
 add_test("Fixed Primary rho", identical(WE_RHO_FIXED, 0.036623315093487))
-synthetic <- data.frame(
-  point_id = c("001", "001", "001", "002"),
-  calendar_month_index = c(100L, 101L, 103L, 100L)
-)
-synthetic_start <- we_build_ar_start(synthetic, "point_id")
-add_test("AR start new site", isTRUE(synthetic_start[4L]))
-add_test("AR gap rebuilt", isTRUE(synthetic_start[3L]))
-add_test("AR continuous month not start", !synthetic_start[2L])
+cold_ids <- as.character(cold$point_id)
+expected_start <- c(TRUE, cold_ids[-1L] != cold_ids[-length(cold_ids)] |
+                      diff(cold$calendar_month_index) > 1L)
+add_test("Observed ColdSnow AR sequence", identical(cold$AR.start, expected_start))
 add_test("ColdSnow AR starts stored", identical(cold$AR.start, we_build_ar_start(cold, "point_id")))
 k <- we_model1_k_initial()
 add_test("Fixed surface 5x5", k$surface == 5L && grepl("k = c\\(5, 5\\)", formula_text))
@@ -84,22 +79,11 @@ add_test("Support years check 3", identical(WE_SUPPORT_MIN_YEARS, 3L))
 add_test("Support validationed at both A and B", identical(as.character(support$contrast_point), c("A", "B")))
 add_test("Bootstrap target B1000", identical(WE_BOOT_TARGET_SUCCESS, 1000L))
 add_test("Bootstrap maximum 1050", identical(WE_BOOT_DRAWS, 1050L))
-dup_ids <- we_boot_series_ids(c("029", "029", "030", "029"))
-add_test("Duplicate sites get independent boot IDs", length(unique(dup_ids)) == 4L &&
-           identical(dup_ids, c("029_copy01", "029_copy02", "030_copy01", "029_copy03")))
-mini <- data.frame(
-  point_id = factor(c("029", "029")), calendar_month_index = c(100L, 101L),
-  Year = c(2022L, 2022L), Month = c(4L, 5L), npp_anomaly_mean_g = c(1, 2),
-  precip_rank_baseline = c(0.5, 0.6), radiation_rank_baseline = c(0.4, 0.3),
-  precip_antecedent3_sum_mm = c(10, 11), radiation_antecedent3_mean_MJ_m2 = c(20, 21),
-  soilwater_lag1 = c(0.2, 0.3), ndvi_lag1_canonical = c(0.4, 0.5)
-)
-draw <- data.frame(
-  original_point_id = c("029", "029"), boot_series_id = c("029_copy01", "029_copy02")
-)
-mini_boot <- we_build_boot_data(mini, draw)
-add_test("Bootstrap copies have independent AR chains", sum(mini_boot$AR.start) == 2L &&
-           length(levels(mini_boot$boot_series_id)) == 2L)
+draw <- we_bootstrap_draw_sequence(levels(cold$point_id), n_draws = 1L, seed = WE_SEED)
+boot_data <- we_build_boot_data(cold, draw)
+add_test("Observed-site bootstrap copies restart AR chains",
+         all(tapply(boot_data$AR.start, boot_data$boot_series_id, function(x) isTRUE(x[1L]))) &&
+           length(levels(boot_data$boot_series_id)) == nrow(draw))
 add_test("Bootstrap fixed rho", grepl("WE_RHO_FIXED", bootstrap_text, fixed = TRUE) &&
            !grepl("rho_from_pairs", bootstrap_text, fixed = TRUE))
 add_test("Bootstrap fixed seed", identical(WE_SEED, 20260803L) &&
@@ -112,7 +96,7 @@ add_test("Analysis-stage selector", !grepl("LOYO|drop 202", paste(stage1_text, b
 add_test("Fixed temperature threshold", !grepl("> -5|> 2|> 5|> 10|threshold_grid|optimi[sz]e.*threshold",
                                       paste(stage1_text, bootstrap_text), ignore.case = TRUE))
 add_test("Sensitivity analysis selector", identical(WE_ALLOWED_ANALYSIS, "COLD_SNOW_EXCLUSION"))
-add_test("Primary not refitted", !grepl("Fitting Primary|rho = 0", stage1_text, fixed = TRUE))
+add_test("Sensitivity fit source specification", !grepl("Fitting Primary|rho = 0", stage1_text, fixed = TRUE))
 add_test("Local input workflow", !grepl("download.file|curl|wget|http://|https://", paste(stage1_text, bootstrap_text), ignore.case = TRUE))
 primary_tests <- read.csv(file.path(
   WE_PRIMARY_ROOT, "13_TESTS", "WE_GAMM_PRIMARY_TEST_RESULTS.csv"

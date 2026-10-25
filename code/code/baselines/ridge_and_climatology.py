@@ -1,14 +1,7 @@
-"""Validation-lock and Evaluation stages for Ridge W36 and monthly climatology.
+"""Ridge W36 and monthly climatology.
 
-The ``select`` stage uses only Train (2005--2018) and Validation (2019--2021):
-Ridge alpha is chosen on Validation, the selected Ridge is fitted on Train, and
-calendar-month climatology means are computed from Train.  Those artifacts are
-hashed into a pre-Evaluation lock.
-
-The ``evaluate`` stage first validates that lock and the current canonical run
-lineage, then and only then reads the 2022--2025 Evaluation slice and writes the
-two deterministic prediction files in manuscript units.
-"""
+Select Ridge alpha on Validation (2019--2021); fit on Train (2005--2018).
+Save the fitted models and evaluate on 2022--2025 in the evaluate stage."""
 
 from __future__ import annotations
 

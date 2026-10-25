@@ -1,7 +1,7 @@
-# Local inputs and generated outputs are intentionally excluded from the
-# public source release.
 data/processed/
 data/raw/
+data/water_energy/
+outputs/
 runtime/
 configs/config.yaml
 __pycache__/

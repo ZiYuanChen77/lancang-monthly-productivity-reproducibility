@@ -200,7 +200,7 @@ def environment_manifest(actual_device: Optional[torch.device] = None) -> Dict[s
 
 
 def validate_run_root(path: Path) -> Path:
-    """Return a safe runtime/runs/<run_id> root or fail closed."""
+    """Resolve the runtime/runs/<run_id> output directory."""
     resolved = Path(path).resolve()
     forbidden = {part.lower() for part in resolved.parts} & RESERVED_PATH_PARTS
     if forbidden:
@@ -1093,8 +1093,7 @@ def cmd_rime_search(args: argparse.Namespace) -> None:
         from mealpy.physics_based.RIME import OriginalRIME
     except Exception as exc:
         raise RuntimeError(
-            "The runtime environment does not currently provide mealpy; refusing RIME. "
-            "Provisioning the environment requires separate approval."
+            "mealpy is required for RIME. Install code/environment/requirements.txt."
         ) from exc
     selection_path = Path(args.window_selection).resolve()
     if selection_path != (run_root / "window_selection_manifest.json").resolve():

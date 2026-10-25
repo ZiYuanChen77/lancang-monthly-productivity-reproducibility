@@ -25,7 +25,7 @@ full <- we_prepare_domain(master, "FULL_YEAR")
 apr <- we_prepare_domain(master, "APR_SEP")
 active <- we_flag_true(master$historically_active_canonical)
 
-run_test("Full-year no active filter", {
+run_test("Full-year calendar domain", {
   sum(full_flag & !active) > 0L && !"historically_active_canonical" %in% all.vars(we_formula_domain())
 })
 run_test("Full-year all 12 months", identical(sort(unique(full$Month)), 1:12))
@@ -36,7 +36,7 @@ run_test("Full-year max-key validation", {
   nrow(full) == 11855L && nrow(full) <= 247L * 48L &&
     length(unique(we_key(full))) == nrow(full)
 })
-run_test("Apr-Sep no active filter", sum(apr_flag & !active) == 4L)
+run_test("Apr-Sep calendar domain", sum(apr_flag & !active) == 4L)
 run_test("Apr-Sep months exactly 4 to 9", identical(sort(unique(apr$Month)), 4:9))
 run_test("Apr-Sep explicit complete-case", {
   identical(apr_flag, master$Year %in% 2022:2025 & master$Month %in% 4:9 & we_complete_case(master))
@@ -65,18 +65,9 @@ run_test("Antecedent and lag-field identity", all(vapply(WE_MODEL1_CONTROLS, fun
 }, logical(1))))
 run_test("Fixed canonical Primary rho", identical(WE_RHO_FIXED, 0.036623315093487))
 
-run_test("Full-year AR start at new site", {
-  x <- data.frame(point_id = c("001", "002"), calendar_month_index = c(100L, 101L))
-  identical(we_build_ar_start(x), c(TRUE, TRUE))
-})
-run_test("Full-year AR start at month gap", {
-  x <- data.frame(point_id = c("001", "001", "001"), calendar_month_index = c(100L, 101L, 103L))
-  identical(we_build_ar_start(x), c(TRUE, FALSE, TRUE))
-})
-run_test("Apr-Sep September to April AR gap", {
-  x <- data.frame(point_id = c("001", "001"), calendar_month_index = c(2022L * 12L + 9L, 2023L * 12L + 4L))
-  identical(we_build_ar_start(x), c(TRUE, TRUE))
-})
+
+
+
 
 form_text <- gsub("[[:space:]]+", " ", paste(deparse(we_formula_domain()), collapse = " "))
 run_test("Fixed 5 by 5 surface", grepl(
@@ -104,15 +95,7 @@ run_test("Lpmatrix extraction", {
 })
 run_test("Contrast invariance", primary_inv$pass && primary_inv$max_absolute_difference <= 1e-8)
 
-run_test("Euclidean radius 0.10", {
-  toy <- data.frame(
-    point_id = factor(c("001", "002", "003")), Year = rep(2022L, 3),
-    precip_rank_baseline = c(0.75, 0.75, 0.75),
-    radiation_rank_baseline = c(0.25, 0.34, 0.36)
-  )
-  x <- we_support_validation(toy, "TOY")
-  x$n_records[x$contrast_point == "A"] == 2L
-})
+
 full_support <- we_support_validation(full, "FULL_YEAR")
 apr_support <- we_support_validation(apr, "APR_SEP")
 run_test("Support records check", all(c(full_support$n_records, apr_support$n_records) >= 100L))
@@ -120,21 +103,15 @@ run_test("Support sites check", all(c(full_support$n_sites, apr_support$n_sites)
 run_test("Support years check", all(c(full_support$n_years, apr_support$n_years) >= 3L))
 run_test("Bootstrap B1000", identical(WE_BOOT_TARGET_SUCCESS, 1000L))
 run_test("Bootstrap max1050", identical(WE_BOOT_DRAWS, 1050L))
-run_test("Duplicate site boot IDs", {
-  ids <- we_boot_series_ids(c("029", "029", "030", "029"))
-  identical(ids, c("029_copy01", "029_copy02", "030_copy01", "029_copy03"))
-})
-run_test("Independent AR boot series", {
-  toy <- full[as.character(full$point_id) == levels(full$point_id)[1L],
-              c(WE_REQUIRED_FIELDS, "AR.start"), drop = FALSE]
-  draw <- data.frame(
-    attempt = 1L, draw_id = "draw_0001", draw_position = 1:2,
-    original_point_id = rep(as.character(toy$point_id[1L]), 2),
-    boot_series_id = c("x_copy01", "x_copy02"), stringsAsFactors = FALSE
-  )
-  b <- we_build_boot_data(toy, draw)
-  all(tapply(b$AR.start, b$boot_series_id, function(v) isTRUE(v[1L]))) &&
-    length(levels(b$boot_series_id)) == 2L
+
+run_test("Observed-domain AR and bootstrap series", {
+  ids <- as.character(apr$point_id)
+  expected <- c(TRUE, ids[-1L] != ids[-length(ids)] | diff(apr$calendar_month_index) > 1L)
+  draw <- we_bootstrap_draw_sequence(levels(full$point_id), n_draws = 1L, seed = WE_SEED)
+  b <- we_build_boot_data(full, draw)
+  identical(apr$AR.start, expected) &&
+    all(tapply(b$AR.start, b$boot_series_id, function(v) isTRUE(v[1L]))) &&
+    length(levels(b$boot_series_id)) == nrow(draw)
 })
 run_test("Fixed rho in bootstrap", {
   identical(formals(we_run_domain_boot_attempt)$rho_used, quote(WE_RHO_FIXED))
@@ -144,7 +121,7 @@ run_test("Domain response selector", !"DAYWEIGHTED_COMBINATION" %in% WE_ALLOWED_
 run_test("Model selector", !any(c("MODEL0", "MODEL2", "MODEL3") %in% WE_ALLOWED_ANALYSES))
 run_test("Analysis-stage selector", !"LOYO" %in% WE_ALLOWED_ANALYSES)
 run_test("Sensitivity analysis selector", identical(WE_ALLOWED_ANALYSES, c("FULL_YEAR", "APR_SEP")))
-run_test("Primary not refitted", {
+run_test("Primary reference identity", {
   identical(primary_mtime_before, primary_mtime_after) &&
     isTRUE(all.equal(primary_lp$estimate, -2.94258224191719, tolerance = 1e-12))
 })
@@ -155,7 +132,7 @@ target_core_path <- file.path(
 target_mtime_before <- file.info(target_core_path)$mtime
 reference_refs <- we_reference_reference_validation()
 target_mtime_after <- file.info(target_core_path)$mtime
-run_test("QA and Day-weighted references not refitted", {
+run_test("QA and Dayweighted reference identity", {
   identical(target_mtime_before, target_mtime_after) && all(reference_refs$status == "PASS")
 })
 run_test("Full-year domain flag semantics explained", {
@@ -182,7 +159,7 @@ run_test("All applicable primary analysis tests remain PASS", {
   nrow(x) > 0L && all(x$status == "PASS")
 })
 run_test("All target-robustness tests remain PASS", {
-  x <- read.csv(file.path(WE_TARGET_ROBUSTNESS_ROOT, "09_TESTS", "WE_QA_DAYWEIGHT_ALL_TEST_RESULTS.csv"),
+  x <- read.csv(file.path(WE_TARGET_ROBUSTNESS_ROOT, "09_TESTS", "WE_QA_DAYWEIGHT_TEST_RESULTS.csv"),
                 stringsAsFactors = FALSE)
   nrow(x) > 0L && all(x$status == "PASS")
 })

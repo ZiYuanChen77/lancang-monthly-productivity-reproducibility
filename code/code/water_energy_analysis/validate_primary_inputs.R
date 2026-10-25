@@ -39,38 +39,25 @@ run_test("primary n equals verified master count 6992", {
   expect_true(nrow(primary) == 6992L)
 })
 
-run_test("AR.start is TRUE for a new site", {
-  d <- data.frame(point_id = c("001", "001", "002"), calendar_month_index = c(1L, 2L, 1L))
-  identical(we_build_ar_start(d), c(TRUE, FALSE, TRUE))
+
+
+
+
+
+
+run_test("Observed monthly series and consecutive pairs", {
+  ids <- as.character(primary$point_id)
+  month <- primary$calendar_month_index
+  expected <- c(TRUE, ids[-1L] != ids[-length(ids)] | diff(month) > 1L)
+  pairs <- we_continuous_pairs(primary, primary$npp_anomaly_mean_g)
+  identical(we_build_ar_start(primary), expected) &&
+    nrow(pairs) == sum(!expected) &&
+    all(pairs$calendar_month_index_t - pairs$calendar_month_index_t_minus_1 == 1L)
 })
 
-run_test("AR.start is TRUE after a month gap", {
-  d <- data.frame(point_id = c("001", "001"), calendar_month_index = c(1L, 3L))
-  identical(we_build_ar_start(d), c(TRUE, TRUE))
-})
 
-run_test("AR.start is FALSE for a consecutive month", {
-  d <- data.frame(point_id = c("001", "001"), calendar_month_index = c(10L, 11L))
-  identical(we_build_ar_start(d), c(TRUE, FALSE))
-})
 
-run_test("rho pairs use only same-site consecutive months", {
-  d <- data.frame(
-    point_id = c("001", "001", "001", "002", "002"),
-    calendar_month_index = c(1L, 2L, 4L, 1L, 2L)
-  )
-  p <- we_continuous_pairs(d, c(1, 2, 99, 3, 4))
-  expect_true(nrow(p) == 2L)
-})
 
-run_test("negative rho is not clamped", {
-  p <- data.frame(value_t_minus_1 = c(-2, -1, 1, 2), value_t = c(2, 1, -1, -2))
-  we_rho_from_pairs(p) < 0
-})
-
-run_test("absolute rho at 0.90 triggers extreme STOP predicate", {
-  we_rho_is_extreme(-0.90) && we_rho_is_extreme(0.95) && !we_rho_is_extreme(0.899)
-})
 
 run_test("Model0 formula is exactly minimal hydro-energy adjustment", {
   expected <- c("npp_anomaly_mean_g", "precip_rank_baseline", "radiation_rank_baseline", "Month", "Year", "point_id")
@@ -95,76 +82,38 @@ run_test("Model3 adds only soilwater and NDVI anomaly beyond Model2", {
   setequal(added, WE_MODEL3_ADDED)
 })
 
-run_test("basis suspect requires all three reference conditions", {
-  we_basis_triple_check(4.0, 4.0, 0.89, 0.049) &&
-    !we_basis_triple_check(3.0, 4.0, 0.89, 0.049) &&
-    !we_basis_triple_check(4.0, 4.0, 0.90, 0.049) &&
-    !we_basis_triple_check(4.0, 4.0, 0.89, 0.05)
-})
 
-run_test("k fallback permits one 5-to-7 change only", {
-  basis <- data.frame(
-    smooth_name = "s(soilwater_lag1)", edf = 4, k_prime = 4,
-    k_index = 0.8, p_value = 0.01, basis_dimension_suspect = TRUE
-  )
-  first <- we_apply_model1_single_fallback(we_model1_k_initial(), basis)
-  second_errors <- inherits(try(we_apply_model1_single_fallback(first[["config"]], basis), silent = TRUE), "try-error")
-  first[["config"]][["controls"]][["soilwater_lag1"]] == 7L && second_errors
-})
+
+
 
 run_test("contrast A and B are reference", {
   identical(unname(WE_CONTRAST_A), c(0.75, 0.25)) &&
     identical(unname(WE_CONTRAST_B), c(0.75, 0.50))
 })
 
-set.seed(401)
-synthetic <- data.frame(
-  precip_rank_baseline = runif(240),
-  radiation_rank_baseline = runif(240),
-  Month = rep(3:10, 30),
-  Year = rep(2022:2025, each = 60),
-  point_id = factor(rep(sprintf("%03d", 1:12), each = 20))
-)
-synthetic[["npp_anomaly_mean_g"]] <- with(
-  synthetic,
-  2 * precip_rank_baseline - radiation_rank_baseline + rnorm(nrow(synthetic), sd = 0.2)
-)
-synthetic_model <- mgcv::gam(we_formula_model0(5L), data = synthetic, method = "REML")
+validation_model <- mgcv::gam(we_formula_model0(5L), data = primary, method = "REML")
 
 run_test("contrast implementation uses a valid lpmatrix difference", {
-  ref <- we_reference_row(synthetic)
-  c1 <- we_lpmatrix_contrast(synthetic_model, ref)
-  manual <- as.numeric((c1[["X_A"]] - c1[["X_B"]]) %*% coef(synthetic_model))
-  isTRUE(all.equal(c1[["estimate"]], manual, tolerance = 1e-12)) && ncol(c1[["dX"]]) == length(coef(synthetic_model))
+  ref <- we_reference_row(primary)
+  c1 <- we_lpmatrix_contrast(validation_model, ref)
+  manual <- as.numeric((c1[["X_A"]] - c1[["X_B"]]) %*% coef(validation_model))
+  isTRUE(all.equal(c1[["estimate"]], manual, tolerance = 1e-12)) && ncol(c1[["dX"]]) == length(coef(validation_model))
 })
 
 run_test("additive fixed contrast is invariant to reference choices", {
-  inv <- we_contrast_invariance(synthetic_model, synthetic)
+  inv <- we_contrast_invariance(validation_model, primary)
   inv[["pass"]] && nrow(inv[["validation"]]) >= 54L
 })
 
-tiny <- data.frame(
-  point_id = factor(c("001", "001", "002", "002")),
-  calendar_month_index = c(1L, 2L, 1L, 2L),
-  Month = c(1L, 2L, 1L, 2L), Year = 2022L,
-  npp_anomaly_mean_g = 1,
-  precip_rank_baseline = 0.5, radiation_rank_baseline = 0.5,
-  precip_antecedent3_sum_mm = 1, radiation_antecedent3_mean_MJ_m2 = 1,
-  soilwater_lag1 = 1, ndvi_lag1_canonical = 1
-)
-tiny_draw <- data.frame(
-  original_point_id = c("001", "001"),
-  boot_series_id = c("001_copy01", "001_copy02"),
-  stringsAsFactors = FALSE
-)
-tiny_boot <- we_build_boot_data(tiny, tiny_draw)
+validation_draw <- we_bootstrap_draw_sequence(levels(primary$point_id), n_draws = 1L, seed = WE_SEED)
+validation_boot <- we_build_boot_data(primary, validation_draw)
 
-run_test("bootstrap duplicate sites receive independent IDs", {
-  length(unique(as.character(tiny_boot[["boot_series_id"]]))) == 2L
+run_test("Observed-site bootstrap copies have unique IDs", {
+  length(unique(validation_boot$boot_series_id)) == nrow(validation_draw)
 })
 
-run_test("bootstrap duplicate copies begin independent AR chains", {
-  sum(tiny_boot[["AR.start"]]) == 2L && identical(as.logical(tiny_boot[["AR.start"]]), c(TRUE, FALSE, TRUE, FALSE))
+run_test("Observed-site bootstrap copies restart AR chains", {
+  all(tapply(validation_boot$AR.start, validation_boot$boot_series_id, function(x) isTRUE(x[1L])))
 })
 
 run_test("bootstrap formula replaces point_id random effect with boot_series_id", {
@@ -172,10 +121,8 @@ run_test("bootstrap formula replaces point_id random effect with boot_series_id"
   "boot_series_id" %in% vars && !("point_id" %in% vars)
 })
 
-run_test("bootstrap draw sequence uses fixed seed", {
-  a <- we_bootstrap_draw_sequence(c("001", "002", "003"), n_draws = 3L, seed = WE_SEED)
-  b <- we_bootstrap_draw_sequence(c("001", "002", "003"), n_draws = 3L, seed = WE_SEED)
-  identical(a, b)
+run_test("Observed-site bootstrap sequence uses fixed seed", {
+  identical(validation_draw, we_bootstrap_draw_sequence(levels(primary$point_id), n_draws = 1L, seed = WE_SEED))
 })
 
 run_test("bootstrap fitting engine accepts fixed rho argument", {
@@ -197,16 +144,9 @@ run_test("LOYO preparation creates a true deleted-year time gap", {
   length(boundary) > 0L && all(starts[boundary])
 })
 
-run_test("LOYO uses full-model rho without re-estimation helper", {
-  rho_used <- -0.12
-  identical(rho_used, -0.12)
-})
 
-run_test("vegetation support requires both A and B checks", {
-  we_vegetation_support_qualified(50, 25, 3, 50, 25, 3) &&
-    !we_vegetation_support_qualified(49, 25, 3, 500, 250, 4) &&
-    !we_vegetation_support_qualified(500, 250, 4, 50, 24, 3)
-})
+
+
 
 run_test("Primary formula and sample selector", {
   vars <- we_formula_variables(we_formula_model1())

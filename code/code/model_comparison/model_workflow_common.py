@@ -106,10 +106,7 @@ def load_config(path: str | Path) -> ExperimentConfig:
 
 
 def validate_public_config(config: ExperimentConfig) -> None:
-    """Require the configuration to match the fixed public W36 workflow.
-
-    The configuration records the W36 analysis specification used in the
-    manuscript. Validation checks keep the YAML aligned with that specification.
+    """Check the W36 configuration against the study settings.
     """
     if config.root.resolve() != PACKAGE_ROOT.resolve():
         raise ValueError(

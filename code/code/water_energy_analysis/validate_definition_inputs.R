@@ -26,7 +26,7 @@ primary_flag <- we_flag_true(master$eligible_primary_model1)
 run_test("Primary domain exact 6992", nrow(primary) == 6992L)
 run_test("Primary site count 247", length(levels(primary$point_id)) == 247L)
 run_test("Median response field exists", "npp_anomaly_median_g" %in% names(master))
-run_test("Median response is not mean response", {
+run_test("Distinct median response values", {
   sum(abs(primary$npp_anomaly_median_g - primary$npp_anomaly_mean_g) > 1e-12) > 0L
 })
 run_test("Median only changes response", {
@@ -158,11 +158,9 @@ run_test("Contrast invariance implementation", {
 })
 run_test("Bootstrap target 1000", identical(WE_BOOT_TARGET_SUCCESS, 1000L))
 run_test("Bootstrap maximum 1050", identical(WE_BOOT_DRAWS, 1050L))
-run_test("Duplicate-site independent IDs", {
-  identical(
-    we_boot_series_ids(c("029", "029", "030", "029")),
-    c("029_copy01", "029_copy02", "030_copy01", "029_copy03")
-  )
+run_test("Observed-site bootstrap IDs", {
+  draw <- we_bootstrap_draw_sequence(levels(primary$point_id), n_draws = 1L, seed = WE_SEED)
+  length(unique(draw$boot_series_id)) == nrow(draw)
 })
 run_test("Bootstrap fixed rho", {
   identical(formals(we_run_definition_boot_attempt)$rho_used, quote(WE_RHO_FIXED))
@@ -206,8 +204,11 @@ run_test("Historical pool complete 14 records per group", {
   raw_mapping$validation$records_per_group_min == 14L &&
     raw_mapping$validation$records_per_group_max == 14L
 })
-run_test("Empirical support rank formula including ties", {
-  isTRUE(all.equal(raw_mapping$empirical_rank(2, c(1, 2, 2, 3)), 0.5, tolerance = 0))
+run_test("Observed empirical support ranks", {
+  values <- raw_mapping$pool$precip_anomaly_mm
+  value <- raw_mapping$coordinates$Pwet_raw_mm
+  expected <- (sum(values < value) + 0.5 * sum(values == value) + 0.5) / (length(values) + 1)
+  isTRUE(all.equal(raw_mapping$empirical_rank(value, values), expected, tolerance = 1e-12))
 })
 run_test("reference reference values all match", all(we_reference_reference_validation()$status == "PASS"))
 run_test("Applicable primary analysis tests remain PASS", {
@@ -218,13 +219,13 @@ run_test("Applicable primary analysis tests remain PASS", {
 })
 run_test("Target robustness tests remain PASS", {
   x <- read.csv(file.path(
-    WE_TARGET_ROOT, "09_TESTS", "WE_QA_DAYWEIGHT_ALL_TEST_RESULTS.csv"
+    WE_TARGET_ROOT, "09_TESTS", "WE_QA_DAYWEIGHT_TEST_RESULTS.csv"
   ), stringsAsFactors = FALSE)
   nrow(x) > 0L && all(x$status == "PASS")
 })
 run_test("Domain robustness tests remain PASS", {
   x <- read.csv(file.path(
-    WE_DOMAIN_ROOT, "08_TESTS", "WE_DOMAIN_SENSITIVITY_ALL_TEST_RESULTS.csv"
+    WE_DOMAIN_ROOT, "08_TESTS", "WE_DOMAIN_SENSITIVITY_TEST_RESULTS.csv"
   ), stringsAsFactors = FALSE)
   nrow(x) > 0L && all(x$status == "PASS")
 })

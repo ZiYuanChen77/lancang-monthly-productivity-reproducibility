@@ -146,7 +146,7 @@ we_write_csv(
 selector_validation <- we_analysis_selector_validation()
 we_write_csv(
   selector_validation,
-  we_path("09_LOGS", "WE_NO_UNAPPROVED_ANALYSIS_validation.csv")
+  we_path("09_LOGS", "WE_ANALYSIS_SPECIFICATION_validation.csv")
 )
 input_validation <- data.frame(
   master_path = normalizePath(WE_MASTER_PATH, winslash = "/", mustWork = TRUE),

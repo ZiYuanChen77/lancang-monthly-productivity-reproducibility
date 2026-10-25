@@ -319,7 +319,7 @@ we_build_raw_mapping <- function() {
 
 we_prepare_primary_domain <- function(master, raw_mapping = NULL) {
   if (!"npp_anomaly_median_g" %in% names(master)) {
-    we_stop_check("STOP — APPROVED MEDIAN RESPONSE FIELD NOT FOUND", "MEDIAN_FIELD_check")
+    we_stop_check("STOP — MEDIAN RESPONSE FIELD NOT FOUND", "MEDIAN_FIELD_check")
   }
   required <- c(
     "point_id", "Year", "Month", "calendar_month_index", "eligible_primary_model1",

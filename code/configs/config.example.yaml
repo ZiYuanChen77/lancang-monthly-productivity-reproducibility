@@ -1,8 +1,8 @@
 # Copy this file to config.yaml and set the local data paths.
 paths:
-  monthly_model_input: "../public_data_v1.1/model_input/monthly_model_input.csv"
-  study_sites: "../public_data_v1.1/model_input/study_sites_247.csv"
-  unseen_site_folds: "../public_data_v1.1/model_input/unseen_site_fold_assignment.csv"
+  monthly_model_input: "../public_data/model_input/monthly_model_input.csv"
+  study_sites: "../public_data/model_input/study_sites_247.csv"
+  unseen_site_folds: "../public_data/model_input/unseen_site_fold_assignment.csv"
   processed_data: "data/processed"
   predictions_dir: "runtime/predictions"
   checkpoints_dir: "runtime/models"

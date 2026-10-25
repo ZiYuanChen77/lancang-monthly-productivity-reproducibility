@@ -111,7 +111,7 @@ we_write_csv(ar$gap_distribution, we_path("05_DIAGNOSTICS", "WE_ADJUSTMENT_AR_GA
 we_write_csv(support, we_path("06_SUPPORT", "WE_MODEL2_MODEL3_CONTRAST_SUPPORT_validation.csv"))
 we_write_csv(
   we_analysis_selector_validation(),
-  we_path("09_LOGS", "WE_NO_UNAPPROVED_ANALYSIS_validation.csv")
+  we_path("09_LOGS", "WE_ANALYSIS_SPECIFICATION_validation.csv")
 )
 for (model_name in WE_MODEL_NAMES) {
   model_dir <- if (model_name == "MODEL2") "02_MODEL2" else "03_MODEL3"

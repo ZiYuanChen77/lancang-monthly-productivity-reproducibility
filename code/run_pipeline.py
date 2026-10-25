@@ -1,11 +1,6 @@
-"""Command dispatcher for the public W36 comparison-model workflow.
+"""Run comparison models, fixed-W36 spatial reference fits, and water-energy preparation.
 
-For the 13-model comparison branch, this dispatcher starts only after the
-canonical pipeline has created ``pre_evaluation_lock_manifest.json`` and keeps
-all comparison tuning/fitting on the Train/Validation side of the protocol
-boundary. It also exposes the separate coordinate-clustered unseen-site
-fit/evaluate branch, which requires the public 247-site coordinate table.
-"""
+For R2 fold-specific spatial selection, use run_revision.py spatial."""
 
 from __future__ import annotations
 
@@ -78,7 +73,7 @@ def parser() -> argparse.ArgumentParser:
         )
     q = sub.add_parser(
         "prepare-water-energy",
-        help="Build GAMM analysis inputs from public_data_v1.1.",
+        help="Build GAMM analysis inputs from public_data.",
     )
     q.add_argument("--public-data-root", required=True)
     q.add_argument("--output-dir", default="data/water_energy")
@@ -113,7 +108,7 @@ def main() -> None:
             "EVALUATION BOUNDARY: run canonical_pipeline.py evaluate once.\n"
             "POST-BOUNDARY: evaluate-models -> evaluate-baselines -> metrics -> "
             "validate-structure -> workbook.\n"
-            "UNSEEN-SITE BRANCH: fit-unseen-site -> evaluate-unseen-site using the "
+            "FIXED-W36 SPATIAL REFERENCE: fit-unseen-site -> evaluate-unseen-site using the "
             "public 247-site coordinate table."
         )
         return

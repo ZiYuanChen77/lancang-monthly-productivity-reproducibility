@@ -95,9 +95,8 @@ def build_frame(input_path: Path, max_forward_fill: int) -> pd.DataFrame:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
     frame["point_id"] = frame["point_id"].astype(str).str.replace(r"\.0$", "", regex=True)
 
-    # Most -9999 codes are treated as missing before the bounded forward fill.
-    # The disclosed evaluation-period NDVI sentinel is restored afterwards so
-    # canonical-full W36 inputs preserve the canonical analysis definition.
+    # Apply bounded forward fill, then retain the recorded NDVI sentinel
+    # for the full-domain tensors. R2 exclusion keys are applied downstream.
     retained_sentinel_count = int((
         frame["point_id"].eq(RETAINED_NDVI_SENTINEL["point_id"])
         & frame["Year"].eq(RETAINED_NDVI_SENTINEL["Year"])

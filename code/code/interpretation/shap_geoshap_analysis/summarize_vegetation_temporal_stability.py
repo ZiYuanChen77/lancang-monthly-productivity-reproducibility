@@ -153,7 +153,7 @@ FIGURE_FILES = [
 
 
 class ValidationError(RuntimeError):
-    """Raised for any fail-closed scientific or consistency mismatch."""
+    """Raised when input consistency checks fail."""
 
 
 def require(condition: bool, message: str) -> None:
@@ -409,7 +409,7 @@ def check_code_boundary() -> dict[str, bool]:
 
 
 def validate_inputs() -> dict[str, Any]:
-    """Fail closed before any statistical aggregation."""
+    """Check inputs before statistical aggregation."""
 
     for child in TEMPORAL_ROOT.iterdir():
         if child.is_file():

@@ -1,28 +1,9 @@
-"""Reproduce the five-fold unseen-site retraining and OOF prediction workflow.
+"""Fixed-W36 reference arm for five-fold spatial validation.
 
-This module implements the coordinate-clustered unseen-site training and
-Evaluation protocol.
-
-Protocol
---------
-* Read the fixed point_id-to-fold mapping and join the 247-site coordinates.
-* For each held-out fold, exclude those sites from both Train (2005--2018) and
-  Validation (2019--2021).
-* Refit X and y scalers separately for each fold using training sites only.
-  The X scaler uses the ``MAX48-fit-then-W36-slice`` protocol:
-  fit population mean/SD on the first nine continuous features of every
-  training sample's 48-month history, then train/evaluate on the final 36
-  months of those histories. Categorical and calendar features retain their
-  original coding.
-* Train the fixed CNN--BiLSTM--Attention specification for seeds
-  42, 2024 and 3407 with Validation-only early stopping.
-* The ``fit`` stage uses Train and Validation records. The ``evaluate`` stage
-  loads the locked checkpoints, predicts each held-out fold,
-  concatenates the 35,568 OOF records and writes the standard summaries.
-
-The workflow reads public site coordinates locally and writes predictions
-and checkpoints to the configured runtime directories.
-"""
+Fit scalers on non-held-out training sites using 48-month histories, then
+use the final 36 months for seeds 42, 2024 and 3407. Train: 2005--2018;
+Validation: 2019--2021; Evaluation: 2022--2025.
+R2 fold-specific window/RIME selection is in spatial_validation/spatial_validation.py."""
 
 from __future__ import annotations
 

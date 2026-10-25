@@ -1,11 +1,6 @@
-"""Summarize three-seed known-site Evaluation predictions by month and year.
+"""Summarize canonical Evaluation predictions by month and year.
 
-This utility operates on the canonical prediction table produced by
-``canonical_pipeline.py evaluate``.  It preserves the manuscript distinction
-between training-seed stochasticity (mean +/- sample SD across seeds) and
-other uncertainty procedures.  It does not create bootstrap confidence
-intervals; use ``code/uncertainty/clustered_bootstrap.py`` for those.
-"""
+Report the mean and sample SD across seeds 42, 2024 and 3407."""
 
 from __future__ import annotations
 

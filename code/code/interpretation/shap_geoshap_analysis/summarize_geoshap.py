@@ -165,7 +165,7 @@ REQUESTED_OUTPUTS = [
 
 
 class ValidationError(RuntimeError):
-    """Raised for any fail-closed scientific or consistency mismatch."""
+    """Raised when input consistency checks fail."""
 
 
 def require(condition: bool, message: str) -> None:
@@ -403,7 +403,7 @@ def check_code_boundary() -> dict[str, bool]:
 
 
 def validate_input_files() -> dict[str, Any]:
-    """Validate every validated input without any attribution aggregation."""
+    """Check input identity, shapes and sample keys."""
 
     tree_before = original_tree_digest()
     for relative_path in CONTROL_FILES:

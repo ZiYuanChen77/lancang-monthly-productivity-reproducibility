@@ -64,7 +64,7 @@ if (!all(domain_validation$status == "PASS")) {
 }
 
 median_validation <- data.frame(
-  approved_field = "npp_anomaly_median_g",
+  response_field = "npp_anomaly_median_g",
   field_present = "npp_anomaly_median_g" %in% names(master),
   primary_records = nrow(primary),
   finite_primary_values = sum(is.finite(primary$npp_anomaly_median_g)),
@@ -82,7 +82,7 @@ median_validation <- data.frame(
 we_write_csv(median_validation,
                we_path("02_MEDIAN_RESPONSE", "WE_MEDIAN_RESPONSE_FIELD_validation.csv"))
 if (median_validation$status != "PASS") {
-  we_stop_check("STOP — APPROVED MEDIAN RESPONSE FIELD NOT FOUND", "MEDIAN_FIELD_check")
+  we_stop_check("STOP — MEDIAN RESPONSE FIELD NOT FOUND", "MEDIAN_FIELD_check")
 }
 
 we_write_csv(raw_mapping$validation,

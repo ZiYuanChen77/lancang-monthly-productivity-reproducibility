@@ -1,10 +1,7 @@
-"""Dependence-aware point-cluster bootstrap for prediction metrics.
+"""Point-cluster bootstrap for prediction metrics.
 
-Rows within a ``point_id`` are resampled together, preserving repeated
-site-month dependence.  The module computes percentile 95% intervals for
-single-model metrics and paired candidate-minus-reference contrasts.  It is a
-stand-alone utility and does not require model weights or raw observations.
-"""
+Resample complete site histories from prediction tables. Report percentile
+95% intervals for metrics and paired candidate-minus-reference differences."""
 
 from __future__ import annotations
 
